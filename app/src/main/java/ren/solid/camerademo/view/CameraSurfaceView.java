@@ -2,7 +2,10 @@ package ren.solid.camerademo.view;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -14,6 +17,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.accessibility.AccessibilityEvent;
 import android.widget.Toast;
 
 import java.io.File;
@@ -222,7 +226,19 @@ public class CameraSurfaceView extends SurfaceView {
         }
         File jpgFile = new File(fileFolder, filename);
         FileOutputStream outputStream = new FileOutputStream(jpgFile); // 文件输出流
-        outputStream.write(data); // 写入sd卡中
+
+        //由于在预览的时候，我们调整了预览的方向，所以在保存的时候我们要旋转回来，不然保存的图片方向是不正确的
+        Matrix matrix = new Matrix();
+        if (mCurrentCameraFacing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+            matrix.setRotate(90);
+        } else {
+            matrix.setRotate(-90);
+        }
+        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+        bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+
+        outputStream.flush(); // 写入sd卡中
         outputStream.close(); // 关闭输出流
         mPictureSavePath = getPictureSaveDir() + File.separator + filename;
         if (mOnSavePictureListener != null) {
@@ -230,8 +246,10 @@ public class CameraSurfaceView extends SurfaceView {
         }
         Toast.makeText(mContext.getApplicationContext(), "图片已保存至:" + mPictureSavePath,
                 Toast.LENGTH_LONG).show();
-        //mContext.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + mPictureSavePath)));
 
+        //这个的作用是让系统去扫描刚拍下的这个图片文件，以利于在MediaSore中能及时更新，
+        // 可能会存在部分手机不用使用的情况（众所周知，现在国内的Rom厂商已把原生Rom改的面目全非）
+        //mContext.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + mPictureSavePath)));
         MediaScannerConnection.scanFile(mContext, new String[]{
                         mPictureSavePath},
                 null, new MediaScannerConnection.OnScanCompletedListener() {
@@ -239,18 +257,17 @@ public class CameraSurfaceView extends SurfaceView {
                         // Log.e(TAG, "扫描完成");
                     }
                 });
+
+
     }
+
 
     private final class MyCameraPictureCallback implements Camera.PictureCallback {
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
             try {
                 saveToSDCard(data); // 保存图片到sd卡中
-//                Toast.makeText(mContext.getApplicationContext(), "保存成功",
-//                        Toast.LENGTH_SHORT).show();
                 camera.startPreview(); // 拍完照后，重新开始预览
-
-
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -262,14 +279,6 @@ public class CameraSurfaceView extends SurfaceView {
      */
     public void takePicture() {
         if (camera != null) {
-//            camera.autoFocus(new Camera.AutoFocusCallback() {
-//                @Override
-//                public void onAutoFocus(boolean success, Camera camera) {
-//                    if (success) {
-//                        camera.takePicture(null, null, new MyCameraPictureCallback());//每次调用takePicture获取图像后，摄像头会停止预览
-//                    }
-//                }
-//            });
             camera.takePicture(null, null, new MyCameraPictureCallback());//每次调用takePicture获取图像后，摄像头会停止预览
         } else {
             //TODO: 提示用户相机不存在
@@ -320,6 +329,10 @@ public class CameraSurfaceView extends SurfaceView {
 
     public void onResume() {
         getCamera();
+    }
+
+    public void onPause() {
+        releaseCamera();
     }
 
     public void setOnSavePictureListener(OnSavePictureListener onSavePictureListener) {

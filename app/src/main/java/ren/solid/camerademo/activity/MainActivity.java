@@ -78,6 +78,11 @@ public class MainActivity extends AppCompatActivity {
         startActivity(new Intent(this, PhotoAlbumActivity.class));
     }
 
+    public void ivSwitchClick(View v) {
+
+        startActivity(new Intent(this, VideoRecorderActivity.class));
+    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         switch (keyCode) {
@@ -91,5 +96,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mCameraSurfaceView.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mCameraSurfaceView.onPause();
     }
 }

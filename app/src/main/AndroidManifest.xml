@@ -3,6 +3,7 @@
     package="ren.solid.camerademo">
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
@@ -22,6 +23,8 @@
         <activity android:name=".activity.ShowPicActivity"></activity>
         <activity android:name=".activity.PhotoAlbumActivity"></activity>
         <activity android:name=".activity.ViewPictureActivity"></activity>
+        <activity android:name=".activity.VideoRecorderActivity"></activity>
+        <activity android:name=".activity.VideoAlbumActivity"></activity>
     </application>
 
 </manifest>
